@@ -12,14 +12,11 @@ const BG_DARK = '#0b0b0b';
 const PANEL = '#1f1f1f';
 const PANEL_2 = '#333333';
 
-type FilterKey = 'all' | 'no-reply' | 'with-reply' | 'favorites';
-
 export default function ChatHub() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [query, setQuery] = useState('');
   const [input, setInput] = useState('');
-  const [filter, setFilter] = useState<FilterKey>('all');
 
   // carregar histórico
   useEffect(() => {
@@ -59,15 +56,11 @@ export default function ChatHub() {
 
   const active = useMemo(() => threads.find(t => t.id === activeId), [threads, activeId]);
 
-  // Filtros da sidebar
+  // filtrar pela busca
   const filteredThreads = useMemo(() => {
     const q = query.toLowerCase();
-    const base = threads.filter(t => `${t.title} ${t.messages.at(-1)?.text ?? ''}`.toLowerCase().includes(q));
-    if (filter === 'favorites') return base.filter(t => t.favorite);
-    if (filter === 'no-reply')   return base.filter(t => t.messages.at(-1)?.author === 'me');
-    if (filter === 'with-reply') return base.filter(t => t.messages.some(m => m.author === 'hot'));
-    return base;
-  }, [threads, query, filter]);
+    return threads.filter(t => `${t.title} ${t.messages.at(-1)?.text ?? ''}`.toLowerCase().includes(q));
+  }, [threads, query]);
 
   function newThread() {
     const n: Thread = {
@@ -132,21 +125,15 @@ export default function ChatHub() {
           </button>
         </div>
 
-        {/* busca + filtros */}
-        <div className="p-3 space-y-2" style={{ backgroundColor: PANEL }}>
+        {/* busca */}
+        <div className="p-3" style={{ backgroundColor: PANEL }}>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar conversa…"
-            className="w-full px-3 py-2 rounded-md outline-none border"
-            style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
+            placeholder="Buscar conversa"
+            className="w-full px-2 py-1 text-sm bg-transparent outline-none border-b"
+            style={{ borderColor: '#2a2a2a' }}
           />
-          <div className="flex flex-wrap gap-2">
-            <FilterChip label="Todos"        active={filter==='all'}        onClick={()=>setFilter('all')} />
-            <FilterChip label="Sem resposta" active={filter==='no-reply'}   onClick={()=>setFilter('no-reply')} />
-            <FilterChip label="Com resposta" active={filter==='with-reply'} onClick={()=>setFilter('with-reply')} />
-            <FilterChip label="Favoritos"    active={filter==='favorites'}  onClick={()=>setFilter('favorites')} />
-          </div>
         </div>
 
         {/* lista de conversas */}
@@ -196,9 +183,6 @@ export default function ChatHub() {
               </div>
             );
           })}
-          {filteredThreads.length === 0 && (
-            <p className="text-sm opacity-70">Nenhuma conversa.</p>
-          )}
         </div>
 
         {/* rodapé */}
@@ -281,18 +265,3 @@ function Bubble({ author, text, timestamp }: { author: Author; text: string; tim
   );
 }
 
-function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="text-xs px-2 py-1 rounded-full border"
-      style={{
-        backgroundColor: active ? '#262626' : '#1a1a1a',
-        borderColor: active ? '#f97316' : '#2a2a2a',
-        color: active ? '#f97316' : '#e5e7eb',
-      }}
-    >
-      {label}
-    </button>
-  );
-}
