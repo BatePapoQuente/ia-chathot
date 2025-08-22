@@ -4,20 +4,25 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Author = 'me' | 'hot';
 type Message = { id: string; author: Author; text: string; timestamp: number };
-type Thread = { id: string; title: string; messages: Message[] };
+type Thread = { id: string; title: string; messages: Message[]; favorite?: boolean };
 
 const STORAGE_KEY = 'hub:threads';
+const ORANGE = '#f97316';
+const BG_DARK = '#0b0b0b';
+const PANEL = '#1f1f1f';
+const PANEL_2 = '#333333';
+
+type FilterKey = 'all' | 'no-reply' | 'with-reply' | 'favorites';
 
 export default function ChatHub() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [query, setQuery] = useState('');
   const [input, setInput] = useState('');
-  const listRef = useRef<HTMLDivElement>(null);
+  const [filter, setFilter] = useState<FilterKey>('all');
 
-  // carregar e salvar
+  // carregar histórico
   useEffect(() => {
-    if (typeof window === 'undefined') return;
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed: Thread[] = JSON.parse(raw);
@@ -42,49 +47,46 @@ export default function ChatHub() {
     }
   }, []);
 
+  // salvar
   useEffect(() => {
-    if (typeof window === 'undefined') return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(threads));
   }, [threads]);
 
+  const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
   }, [activeId, threads]);
 
-  const active = useMemo(
-    () => threads.find((t) => t.id === activeId),
-    [threads, activeId]
-  );
+  const active = useMemo(() => threads.find(t => t.id === activeId), [threads, activeId]);
 
-  const filtered = useMemo(() => {
+  // Filtros da sidebar
+  const filteredThreads = useMemo(() => {
     const q = query.toLowerCase();
-    return threads.filter((t) => {
-      const last = t.messages[t.messages.length - 1];
-      const hay = `${t.title} ${last?.text ?? ''}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [threads, query]);
+    const base = threads.filter(t => `${t.title} ${t.messages.at(-1)?.text ?? ''}`.toLowerCase().includes(q));
+    if (filter === 'favorites') return base.filter(t => t.favorite);
+    if (filter === 'no-reply')   return base.filter(t => t.messages.at(-1)?.author === 'me');
+    if (filter === 'with-reply') return base.filter(t => t.messages.some(m => m.author === 'hot'));
+    return base;
+  }, [threads, query, filter]);
 
   function newThread() {
-    const idx = threads.length + 1;
-    const t: Thread = {
+    const n: Thread = {
       id: crypto.randomUUID?.() ?? String(Date.now()),
-      title: `Conversa ${idx}`,
+      title: `Conversa ${threads.length + 1}`,
       messages: [
-        {
-          id: crypto.randomUUID?.() ?? String(Date.now()),
-          author: 'hot',
-          text: 'Conversa criada. Como posso ajudar? 🙂',
-          timestamp: Date.now(),
-        },
+        { id: crypto.randomUUID?.() ?? String(Date.now()), author: 'hot', text: 'Conversa criada. Como posso ajudar? 🙂', timestamp: Date.now() },
       ],
     };
-    setThreads((prev) => [t, ...prev]);
-    setActiveId(t.id);
+    setThreads(prev => [n, ...prev]);
+    setActiveId(n.id);
+  }
+
+  function toggleFavorite(id: string) {
+    setThreads(prev => prev.map(t => t.id === id ? { ...t, favorite: !t.favorite } : t));
   }
 
   function deleteThread(id: string) {
-    const rest = threads.filter((t) => t.id !== id);
+    const rest = threads.filter(t => t.id !== id);
     setThreads(rest);
     if (id === activeId) setActiveId(rest[0]?.id ?? '');
   }
@@ -92,7 +94,20 @@ export default function ChatHub() {
   function renameThread(id: string) {
     const title = prompt('Novo título da conversa:')?.trim();
     if (!title) return;
-    setThreads((prev) => prev.map((t) => (t.id === id ? { ...t, title } : t)));
+    setThreads(prev => prev.map(t => t.id === id ? { ...t, title } : t));
+  }
+
+  function send() {
+    const text = input.trim();
+    if (!text || !active) return;
+    const msg: Message = { id: crypto.randomUUID?.() ?? String(Date.now()), author: 'me', text, timestamp: Date.now() };
+    setThreads(prev => prev.map(t => t.id === active.id ? { ...t, messages: [...t.messages, msg] } : t));
+    setInput('');
+    // auto reply simples
+    setTimeout(() => {
+      const reply: Message = { id: crypto.randomUUID?.() ?? String(Date.now()+1), author: 'hot', text: 'Anotado! 🔥', timestamp: Date.now() };
+      setThreads(prev => prev.map(t => t.id === active.id ? { ...t, messages: [...t.messages, reply] } : t));
+    }, 400);
   }
 
   function clearAll() {
@@ -102,123 +117,109 @@ export default function ChatHub() {
     newThread();
   }
 
-  function send() {
-    const text = input.trim();
-    if (!text || !active) return;
-    const msg: Message = {
-      id: crypto.randomUUID?.() ?? String(Date.now()),
-      author: 'me',
-      text,
-      timestamp: Date.now(),
-    };
-    setThreads((prev) =>
-      prev.map((t) => (t.id === active.id ? { ...t, messages: [...t.messages, msg] } : t))
-    );
-    setInput('');
-
-    // resposta simples do Hot Bertho (pode remover se não quiser)
-    setTimeout(() => {
-      const reply: Message = {
-        id: crypto.randomUUID?.() ?? String(Date.now() + 1),
-        author: 'hot',
-        text: 'Anotado! 🔥',
-        timestamp: Date.now(),
-      };
-      setThreads((prev) =>
-        prev.map((t) =>
-          t.id === active.id ? { ...t, messages: [...t.messages, reply] } : t
-        )
-      );
-    }, 400);
-  }
-
   return (
-    <div className="max-w-7xl mx-auto h-[calc(100vh-56px)] grid grid-cols-1 lg:grid-cols-12 gap-4 p-4">
-      {/* SIDEBAR */}
-      <aside className="lg:col-span-3 flex flex-col rounded-2xl border bg-white shadow-sm dark:bg-[#333333] dark:border-zinc-800">
-        {/* topo sidebar */}
-        <div className="p-3 border-b bg-[#333333] text-white rounded-t-2xl dark:border-zinc-700">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold">Conversas</span>
-            <button
-              onClick={newThread}
-              className="text-xs px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white"
-            >
-              Nova
-            </button>
-          </div>
+    <div className="flex h-[calc(100vh-0px)]" style={{ backgroundColor: BG_DARK, color: '#e5e7eb' }}>
+      {/* SIDEBAR (estilo ChatGPT) */}
+      <aside className="hidden md:flex w-[280px] h-full flex-col border-r" style={{ borderColor: '#222' }}>
+        {/* topo */}
+        <div className="p-3 sticky top-0 z-10" style={{ backgroundColor: PANEL_2 }}>
+          <button
+            onClick={newThread}
+            className="w-full text-sm px-3 py-2 rounded-lg"
+            style={{ backgroundColor: ORANGE, color: '#fff' }}
+          >
+            + Novo chat
+          </button>
         </div>
 
-        {/* busca */}
-        <div className="p-3">
+        {/* busca + filtros */}
+        <div className="p-3 space-y-2" style={{ backgroundColor: PANEL }}>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar conversa…"
-            className="w-full px-3 py-2 rounded-xl border bg-white outline-none focus:ring-2 focus:ring-orange-200 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100"
+            className="w-full px-3 py-2 rounded-md outline-none border"
+            style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
           />
+          <div className="flex flex-wrap gap-2">
+            <FilterChip label="Todos"        active={filter==='all'}        onClick={()=>setFilter('all')} />
+            <FilterChip label="Sem resposta" active={filter==='no-reply'}   onClick={()=>setFilter('no-reply')} />
+            <FilterChip label="Com resposta" active={filter==='with-reply'} onClick={()=>setFilter('with-reply')} />
+            <FilterChip label="Favoritos"    active={filter==='favorites'}  onClick={()=>setFilter('favorites')} />
+          </div>
         </div>
 
-        {/* lista */}
-        <div className="flex-1 overflow-auto p-3 space-y-2">
-          {filtered.map((t) => {
-            const last = t.messages[t.messages.length - 1];
-            const activeStyle =
-              t.id === activeId
-                ? 'border-orange-500 bg-orange-50 dark:bg-zinc-800'
-                : 'border-zinc-200 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50';
+        {/* lista de conversas */}
+        <div className="flex-1 overflow-auto p-3 space-y-2" style={{ backgroundColor: BG_DARK }}>
+          {filteredThreads.map(t => {
+            const last = t.messages.at(-1);
+            const isActive = t.id === activeId;
             return (
               <div
                 key={t.id}
-                className={`rounded-xl border p-3 cursor-pointer ${activeStyle}`}
                 onClick={() => setActiveId(t.id)}
+                className={`rounded-lg border cursor-pointer ${isActive ? 'ring-1' : ''}`}
+                style={{
+                  backgroundColor: isActive ? '#252525' : '#171717',
+                  borderColor: isActive ? ORANGE : '#2a2a2a',
+                }}
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{t.title}</span>
-                  <span className="text-xs opacity-60">{t.messages.length}</span>
-                </div>
-                <p className="text-sm opacity-70 line-clamp-1">{last?.text ?? '—'}</p>
-                <div className="mt-2 flex gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      renameThread(t.id);
-                    }}
-                    className="text-xs px-2 py-1 rounded-md border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-100"
-                  >
-                    Renomear
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteThread(t.id);
-                    }}
-                    className="text-xs px-2 py-1 rounded-md border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-400/40 dark:text-red-300"
-                  >
-                    Excluir
-                  </button>
+                <div className="p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium truncate">{t.title}</p>
+                    <span className="text-xs opacity-70">{t.messages.length}</span>
+                  </div>
+                  <p className="text-sm opacity-70 line-clamp-1 mt-1">{last?.text ?? '—'}</p>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); renameThread(t.id); }}
+                      className="text-xs px-2 py-1 rounded border"
+                      style={{ borderColor: '#2a2a2a' }}
+                    >
+                      Renomear
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteThread(t.id); }}
+                      className="text-xs px-2 py-1 rounded border border-red-500/40 text-red-400"
+                    >
+                      Excluir
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleFavorite(t.id); }}
+                      className="text-xs px-2 py-1 rounded border"
+                      style={{ borderColor: t.favorite ? ORANGE : '#2a2a2a', color: t.favorite ? ORANGE : undefined }}
+                    >
+                      ★ Fav
+                    </button>
+                  </div>
                 </div>
               </div>
             );
           })}
+          {filteredThreads.length === 0 && (
+            <p className="text-sm opacity-70">Nenhuma conversa.</p>
+          )}
         </div>
 
-        <div className="p-3 border-t dark:border-zinc-700">
+        {/* rodapé */}
+        <div className="p-3 border-t" style={{ borderColor: '#222', backgroundColor: PANEL_2 }}>
           <button
             onClick={clearAll}
-            className="w-full text-sm px-3 py-2 rounded-lg border bg-white hover:bg-zinc-50 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 dark:text-zinc-100"
+            className="w-full text-sm px-3 py-2 rounded-lg border"
+            style={{ borderColor: '#2a2a2a', backgroundColor: '#1a1a1a' }}
           >
             Limpar todas
           </button>
         </div>
       </aside>
 
-      {/* ÁREA PRINCIPAL */}
-      <main className="lg:col-span-9 rounded-2xl border bg-white shadow-sm dark:bg-zinc-900 dark:border-zinc-800 flex flex-col">
+      {/* CONTEÚDO */}
+      <main className="flex-1 h-full flex flex-col">
         {/* topbar */}
-        <div className="h-14 px-4 flex items-center justify-between border-b bg-[#333333] text-white rounded-t-2xl dark:border-zinc-800">
+        <div className="h-14 px-4 flex items-center justify-between border-b sticky top-0 z-10"
+             style={{ backgroundColor: PANEL_2, borderColor: '#222' }}>
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-xl grid place-items-center text-white" style={{ backgroundColor: '#f97316' }}>
+            <div className="h-8 w-8 rounded-lg grid place-items-center text-white" style={{ backgroundColor: ORANGE }}>
               <span className="text-xs font-bold">HB</span>
             </div>
             <div>
@@ -229,26 +230,27 @@ export default function ChatHub() {
         </div>
 
         {/* mensagens */}
-        <div ref={listRef} className="flex-1 overflow-auto p-4 space-y-2">
-          {active?.messages.map((m) => (
+        <div ref={listRef} className="flex-1 overflow-auto p-4 space-y-2" style={{ backgroundColor: BG_DARK }}>
+          {active?.messages.map(m => (
             <Bubble key={m.id} author={m.author} text={m.text} timestamp={m.timestamp} />
           ))}
         </div>
 
         {/* input */}
-        <div className="p-3 border-t dark:border-zinc-800">
+        <div className="p-3 border-t" style={{ backgroundColor: PANEL, borderColor: '#222' }}>
           <div className="flex gap-2">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => (e.key === 'Enter' ? send() : null)}
               placeholder="Escreva sua mensagem…"
-              className="flex-1 px-4 py-3 rounded-xl border bg-white outline-none focus:ring-2 focus:ring-orange-200 dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100"
+              className="flex-1 px-4 py-3 rounded-xl outline-none border"
+              style={{ backgroundColor: '#111', borderColor: '#2a2a2a' }}
             />
             <button
               onClick={send}
               className="px-4 py-3 rounded-xl text-white hover:opacity-90"
-              style={{ backgroundColor: '#f97316' }} // laranja quente
+              style={{ backgroundColor: ORANGE }}
             >
               Enviar
             </button>
@@ -259,41 +261,38 @@ export default function ChatHub() {
   );
 }
 
-function Bubble({
-  author,
-  text,
-  timestamp,
-}: {
-  author: Author;
-  text: string;
-  timestamp: number;
-}) {
+function Bubble({ author, text, timestamp }: { author: Author; text: string; timestamp: number }) {
   const me = author === 'me';
-  const time = new Date(timestamp).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const time = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return (
     <div className={`flex ${me ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow border`}
+        className="max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow border"
         style={
           me
-            ? {
-                backgroundColor: '#f97316',
-                color: '#fff',
-                borderColor: '#f97316',
-              }
-            : {
-                backgroundColor: '#fff',
-                color: '#111827',
-                borderColor: '#e5e7eb',
-              }
+            ? { backgroundColor: '#f97316', color: '#fff', borderColor: '#f97316' }
+            : { backgroundColor: '#171717', color: '#e5e7eb', borderColor: '#2a2a2a' }
         }
       >
         <p className="whitespace-pre-wrap">{text}</p>
         <span className="block text-[10px] mt-1 opacity-80">{time}</span>
       </div>
     </div>
+  );
+}
+
+function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="text-xs px-2 py-1 rounded-full border"
+      style={{
+        backgroundColor: active ? '#262626' : '#1a1a1a',
+        borderColor: active ? '#f97316' : '#2a2a2a',
+        color: active ? '#f97316' : '#e5e7eb',
+      }}
+    >
+      {label}
+    </button>
   );
 }
