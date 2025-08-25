@@ -1,3 +1,4 @@
+// lib/getFirstText.ts
 export type ConvLike =
   | { messages?: Array<{ content?: string | null }>; id?: string | number }
   | { firstMessage?: { content?: string | null }; id?: string | number }
@@ -9,8 +10,8 @@ export type ConvLike =
 
 function sanitize(raw: string) {
   return (raw ?? "")
-    .replace(/<[^>]+>/g, "")      // remove HTML
-    .replace(/[*_#>`~\-]/g, "")   // limpa markdown básico
+    .replace(/<[^>]+>/g, "")
+    .replace(/[*_#>`~\-]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -24,7 +25,6 @@ export function getFirstText(conv: ConvLike): string {
     (conv as any)?.message ??
     (conv as any)?.snippet ??
     "";
-
   const txt = sanitize(String(raw ?? ""));
   return txt || "Sem conteúdo";
 }
