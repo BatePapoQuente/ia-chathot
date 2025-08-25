@@ -1,6 +1,6 @@
 "use client";
 
-import { getFirstText, type ConvLike } from "../../lib/getFirstText";
+import { getFirstText, type ConvLike } from "@/app/lib/getFirstText";
 
 type Props = {
   conv: ConvLike;
