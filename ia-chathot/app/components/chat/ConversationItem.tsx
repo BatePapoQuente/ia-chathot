@@ -1,20 +1,14 @@
-// components/ConversationItem.tsx
-import { getFirstText } from "@/lib/getFirstText";
+"use client";
 
-type Conversation = {
-  id: string | number;
-  messages?: Array<{ content?: string }>;
-};
+import { getFirstText, type ConvLike } from "../../lib/getFirstText";
 
-export function ConversationItem({
-  conv,
-  isActive,
-  onClick,
-}: {
-  conv: Conversation;
+type Props = {
+  conv: ConvLike;
   isActive?: boolean;
   onClick?: () => void;
-}) {
+};
+
+export default function ConversationItem({ conv, isActive, onClick }: Props) {
   const preview = getFirstText(conv);
 
   return (
@@ -22,12 +16,11 @@ export function ConversationItem({
       onClick={onClick}
       className={[
         "w-full text-left rounded-md px-3 py-2 transition",
-        isActive
-          ? "bg-[#333333] text-white"
-          : "text-zinc-200 hover:bg-zinc-800/60",
+        isActive ? "bg-[#333333] text-white" : "text-zinc-200 hover:bg-zinc-800/60",
       ].join(" ")}
       title={preview}
     >
+      {/* só o primeiro conteúdo, sem título */}
       <p className="text-sm leading-5 overflow-hidden text-ellipsis whitespace-nowrap">
         {preview}
       </p>
