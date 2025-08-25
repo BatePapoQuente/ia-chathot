@@ -41,3 +41,13 @@ aside .conv-item h1,
 aside .conv-item h2,
 aside .conv-item h3,
 aside .conv-item .title { display: none !important; }
+
+@import "tailwindcss";
+
+/* foco sutil */
+:focus-visible { outline: none; }
+
+/* scrollbar discreto */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 999px; }
+*::-webkit-scrollbar-track { background: transparent; }
