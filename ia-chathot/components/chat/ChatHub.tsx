@@ -10,6 +10,7 @@ type Thread  = { id: string; title: string; messages: Message[]; favorite?: bool
 
 const STORAGE_KEY = "hub:threads";
 const ORANGE = "#f97316";
+const listRef = useRef<HTMLDivElement | null>(null);
 
 export default function ChatHub() {
   const [threads, setThreads]   = useState<Thread[]>([]);
@@ -54,6 +55,12 @@ export default function ChatHub() {
       return `${first} ${last}`.toLowerCase().includes(q);
     });
   }, [threads, query]);
+
+  // mensagens da conversa ativa em ordem DESC (mais recentes primeiro)
+  const messagesDesc = useMemo(() => {
+    const msgs = active?.messages ?? [];
+    return [...msgs].sort((a, b) => b.timestamp - a.timestamp);
+  }, [active?.messages]);
 
   function newThread() {
     const n: Thread = {
@@ -164,7 +171,7 @@ export default function ChatHub() {
       </aside>
 
       {/* ÁREA DO CHAT */}
-      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 space-y-2">
+      <main className="flex-1 h-full flex flex-col">
         {/* topbar sem barra/caixa */}
         <div className="h-14 px-4 flex items-center justify-between sticky top-0 z-10 bg-zinc-950/80 backdrop-blur">
           <div className="flex items-center gap-3">
@@ -179,8 +186,10 @@ export default function ChatHub() {
         </div>
 
         {/* mensagens (só bolhas, sem cards) */}
-        <div className="flex-1 overflow-auto p-4 space-y-2">
-          {active?.messages.map(m => (
+        <div 
+        ref={listRef}
+        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 space-y-2">
+          {messagesDesc.map((m) => (
             <Bubble key={m.id} author={m.author} text={m.text} timestamp={m.timestamp} />
           ))}
         </div>
