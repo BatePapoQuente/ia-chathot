@@ -51,3 +51,14 @@ aside .conv-item .title { display: none !important; }
 *::-webkit-scrollbar { width: 10px; height: 10px; }
 *::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 999px; }
 *::-webkit-scrollbar-track { background: transparent; }
+
+/* bloqueia scroll horizontal do site inteiro */
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* (opcional) esconda qualquer barra horizontal residual de contêineres */
+.no-x-scroll {
+  overflow-x: hidden !important;
+}

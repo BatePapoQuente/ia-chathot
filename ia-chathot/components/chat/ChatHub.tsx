@@ -98,11 +98,11 @@ export default function ChatHub() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-200">
+    <div className="flex h-screen bg-zinc-950 text-zinc-200 overflow-x-hidden">
       {/* SIDEBAR — sem caixas */}
-      <aside className="hidden md:flex w-[280px] h-full flex-col">
+      <aside className="hidden md:flex w-[280px] h-full flex-col overflow-x-hidden">
         {/* topo (botão pílula) */}
-        <div className="p-3 sticky top-0 z-10 bg-zinc-950/80 backdrop-blur">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-3 space-y-1">
           <button
             onClick={newThread}
             className="w-full text-sm px-4 py-2 rounded-full text-white hover:opacity-90"
@@ -164,7 +164,7 @@ export default function ChatHub() {
       </aside>
 
       {/* ÁREA DO CHAT */}
-      <main className="flex-1 h-full flex flex-col">
+      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 space-y-2">
         {/* topbar sem barra/caixa */}
         <div className="h-14 px-4 flex items-center justify-between sticky top-0 z-10 bg-zinc-950/80 backdrop-blur">
           <div className="flex items-center gap-3">
@@ -187,13 +187,13 @@ export default function ChatHub() {
 
         {/* input em pílula */}
         <div className="p-3 bg-zinc-950/80 backdrop-blur">
-          <div className="flex gap-2">
+          <div className="flex gap-2 min-w-0">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => (e.key === "Enter" ? send() : undefined)}
               placeholder="Escreva sua mensagem…"
-              className="flex-1 px-5 py-3 rounded-full outline-none bg-white/5 focus:bg-white/10"
+              className="flex-1 min-w-0 px-5 py-3 rounded-full outline-none bg-white/5 focus:bg-white/10"
             />
             <button
               onClick={send}
@@ -221,7 +221,7 @@ function Bubble({ author, text, timestamp }: { author: Author; text: string; tim
           : { backgroundColor: "rgba(255,255,255,0.06)", color: "rgb(229,231,235)" }
         }
       >
-        <p className="whitespace-pre-wrap">{text}</p>
+        <p className="whitespace-pre-wrap break-words">{text}</p>
         <span className="block text-[10px] mt-1 opacity-80">{time}</span>
       </div>
     </div>
