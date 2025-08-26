@@ -1,7 +1,5 @@
-// app/page.tsx
-import NextDynamic from "next/dynamic";
-
-const ChatHub = NextDynamic(() => import("@/components/chat/ChatHub"), { ssr: false });
+// app/page.tsx  (Server Component)
+import ChatHub from "@/components/chat/ChatHub"; // ChatHub é "use client"
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

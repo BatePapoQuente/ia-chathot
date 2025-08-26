@@ -1,11 +1,8 @@
-// app/hub/page.tsx
-import NextDynamic from "next/dynamic"; // <-- renomeei o import
+// app/hub/page.tsx  (Server Component)
+import ChatHub from "@/components/chat/ChatHub"; // ChatHub é "use client"
 
-// carrega o componente só no cliente (sem SSR)
-const ChatHub = NextDynamic(() => import("@/components/chat/ChatHub"), { ssr: false });
-
-export const dynamic = "force-dynamic"; // ok manter esse nome aqui
-export const revalidate = 0;
+export const dynamic = "force-dynamic"; // evita SSG
+export const revalidate = 0;             // sem cache
 
 export default function HubPage() {
   return <ChatHub />;
