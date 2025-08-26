@@ -1,8 +1,7 @@
-// app/hub/page.tsx  (Server Component)
-import ChatHub from "@/components/chat/ChatHub"; // ChatHub é "use client"
+import ChatHub from "@/components/chat/ChatHub"; 
 
-export const dynamic = "force-dynamic"; // evita SSG
-export const revalidate = 0;             // sem cache
+export const dynamic = "force-dynamic"; 
+export const revalidate = 0;           
 
 export default function HubPage() {
   return <ChatHub />;
