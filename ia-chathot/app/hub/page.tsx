@@ -1,5 +1,12 @@
-import ChatHub from "@/components/chat/ChatHub";
+// app/hub/page.tsx
+import NextDynamic from "next/dynamic"; // <-- renomeei o import
 
-export default function Page() {
+// carrega o componente só no cliente (sem SSR)
+const ChatHub = NextDynamic(() => import("@/components/chat/ChatHub"), { ssr: false });
+
+export const dynamic = "force-dynamic"; // ok manter esse nome aqui
+export const revalidate = 0;
+
+export default function HubPage() {
   return <ChatHub />;
 }
