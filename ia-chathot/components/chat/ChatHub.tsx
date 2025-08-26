@@ -10,13 +10,13 @@ type Thread  = { id: string; title: string; messages: Message[]; favorite?: bool
 
 const STORAGE_KEY = "hub:threads";
 const ORANGE = "#f97316";
-const listRef = useRef<HTMLDivElement | null>(null);
 
 export default function ChatHub() {
   const [threads, setThreads]   = useState<Thread[]>([]);
   const [activeId, setActiveId] = useState<string>("");
   const [query, setQuery]       = useState<string>("");
   const [input, setInput]       = useState<string>("");
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   // carregar/salvar histórico
   useEffect(() => {
