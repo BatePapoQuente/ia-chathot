@@ -1,15 +1,11 @@
 "use client";
 
-import { getFirstText, type ConvLike } from "@/app/lib/getFirstText";
+import { getFirstUserText, getFirstText, type ConvLike } from "@/lib/getFirstText";
 
-type Props = {
-  conv: ConvLike;
-  isActive?: boolean;
-  onClick?: () => void;
-};
+type Props = { conv: ConvLike; isActive?: boolean; onClick?: () => void };
 
 export default function ConversationItem({ conv, isActive, onClick }: Props) {
-  const preview = getFirstText(conv);
+  const preview = getFirstUserText(conv as any) || getFirstText(conv as any);
 
   return (
     <button
@@ -20,7 +16,6 @@ export default function ConversationItem({ conv, isActive, onClick }: Props) {
       ].join(" ")}
       title={preview}
     >
-      {/* indicador sutil da ativa (sem retângulo) */}
       <span
         className={[
           "absolute left-2 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full",
@@ -28,7 +23,7 @@ export default function ConversationItem({ conv, isActive, onClick }: Props) {
         ].join(" ")}
       />
       <span className="pl-3 text-sm leading-5 overflow-hidden text-ellipsis whitespace-nowrap">
-        {preview}
+        {preview || "Sem conteúdo"}
       </span>
     </button>
   );

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ConversationItem from "./ConversationItem";
+import { getFirstUserText } from "@/lib/getFirstText";
 
 type Author = "me" | "hot";
 type Message = { id: string; author: Author; text: string; timestamp: number };
@@ -171,7 +172,7 @@ export default function ChatHub() {
               <span className="text-xs font-bold">HB</span>
             </div>
             <div>
-              <p className="font-semibold leading-4">Hot Bertho • online</p>
+              <p className="font-semibold leading-4"> {active ? (getFirstUserText(active as any) || "Sem conteúdo") : "—"} </p>
               {/* se quiser, dá pra por o primeiro conteúdo da conversa ativa aqui */}
             </div>
           </div>
