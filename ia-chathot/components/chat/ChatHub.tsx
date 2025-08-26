@@ -109,7 +109,7 @@ export default function ChatHub() {
           Menu
           </button>
         {menuOpen && (
-            <div className="mt-2 space-y-2">
+             <div className="mt-2 space-y-2 animate-fade">
               <button
                 onClick={newThread}
                 className="w-full text-sm px-4 py-2 rounded-full text-white hover:opacity-90"
@@ -238,7 +238,7 @@ function Bubble({ author, text, timestamp }: { author: Author; text: string; tim
   const me   = author === "me";
   const time = new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   return (
-    <div className={`flex ${me ? "justify-end" : "justify-start"}`}>
+    <div className={`flex ${me ? "justify-end" : "justify-start"} animate-fade`}>
       <div
         className={`max-w-[80%] px-4 py-2 text-sm rounded-2xl shadow`}
         style={ me

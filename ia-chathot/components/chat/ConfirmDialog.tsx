@@ -8,7 +8,7 @@ interface ConfirmDialogProps {
 
 export default function ConfirmDialog({ message, onConfirm, onCancel }: ConfirmDialogProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade">
       <div className="bg-zinc-900 text-zinc-200 p-6 rounded-lg space-y-4 shadow-lg">
         <p>{message}</p>
         <div className="flex justify-end gap-2">
