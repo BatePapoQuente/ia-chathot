@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ConversationItem from "./ConversationItem";
+import ConfirmDialog from "./ConfirmDialog";
 import { getFirstUserText } from "@/lib/getFirstText";
 
 type Author = "me" | "hot";
@@ -17,6 +18,7 @@ export default function ChatHub() {
   const [query, setQuery]       = useState<string>("");
   const [input, setInput]       = useState<string>("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   // carregar/salvar histórico
@@ -89,7 +91,6 @@ export default function ChatHub() {
     }, 350);
   }
   function clearAll() {
-    if (!confirm("Limpar todas as conversas?")) return;
     setThreads([]);
     localStorage.removeItem(STORAGE_KEY);
     setActiveId("");
@@ -159,10 +160,10 @@ export default function ChatHub() {
         {/* rodapé “limpo” */}
         <div className="p-3 sticky bottom-0 bg-zinc-950/80 backdrop-blur">
           <button
-            onClick={clearAll}
+            onClick={() => setConfirmOpen(true)}
             className="w-full text-sm px-4 py-2 rounded-full bg-white/5 hover:bg-white/10"
           >
-            Limpar todas
+            Limpar todas as conversas
           </button>
         </div>
       </aside>
@@ -218,6 +219,17 @@ export default function ChatHub() {
           </div>
         </div>
       </main>
+
+      {confirmOpen && (
+        <ConfirmDialog
+          message="Limpar todas as conversas?"
+          onConfirm={() => {
+            clearAll();
+            setConfirmOpen(false);
+          }}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      )}
     </div>
   );
 }
