@@ -16,6 +16,7 @@ export default function ChatHub() {
   const [activeId, setActiveId] = useState<string>("");
   const [query, setQuery]       = useState<string>("");
   const [input, setInput]       = useState<string>("");
+  const [menuOpen, setMenuOpen] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   // carregar/salvar histórico
@@ -25,22 +26,6 @@ export default function ChatHub() {
       const parsed: Thread[] = JSON.parse(raw);
       setThreads(parsed);
       setActiveId(parsed[0]?.id ?? "");
-    } else {
-      const first: Thread = {
-        id: crypto.randomUUID?.() ?? String(Date.now()),
-        title: "Geral",
-        messages: [
-          {
-            id: crypto.randomUUID?.() ?? String(Date.now()),
-            author: "hot",
-            text: "Olá! Eu sou o Hot Bertho 🔥. Esta é sua primeira conversa.",
-            timestamp: Date.now(),
-          },
-        ],
-      };
-      setThreads([first]);
-      setActiveId(first.id);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([first]));
     }
   }, []);
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(threads)), [threads]);
@@ -66,14 +51,7 @@ export default function ChatHub() {
     const n: Thread = {
       id: crypto.randomUUID?.() ?? String(Date.now()),
       title: `Conversa ${threads.length + 1}`,
-      messages: [
-        {
-          id: crypto.randomUUID?.() ?? String(Date.now()),
-          author: "hot",
-          text: "Conversa criada. Como posso ajudar? 🙂",
-          timestamp: Date.now(),
-        },
-      ],
+      messages: [],
     };
     setThreads(prev => [n, ...prev]);
     setActiveId(n.id);
@@ -88,45 +66,64 @@ export default function ChatHub() {
   }
   function send() {
     const text = input.trim();
-    if (!text || !active) return;
+  if (!text) return;
+
+    let id = active?.id;
+    if (!id) {
+      const n: Thread = {
+        id: crypto.randomUUID?.() ?? String(Date.now()),
+        title: `Conversa ${threads.length + 1}`,
+        messages: [],
+      };
+      setThreads(prev => [n, ...prev]);
+      setActiveId(n.id);
+      id = n.id;
+    }
+ 
     const msg: Message = { id: crypto.randomUUID?.() ?? String(Date.now()), author: "me", text, timestamp: Date.now() };
-    setThreads(prev => prev.map(t => (t.id === active.id ? { ...t, messages: [...t.messages, msg] } : t)));
-    setInput("");
-    setTimeout(() => {
-      const reply: Message = { id: crypto.randomUUID?.() ?? String(Date.now()+1), author: "hot", text: "Anotado! 🔥", timestamp: Date.now() };
-      setThreads(prev => prev.map(t => (t.id === active.id ? { ...t, messages: [...t.messages, reply] } : t)));
+      setThreads(prev => prev.map(t => (t.id === id ? { ...t, messages: [...t.messages, msg] } : t)));
+      setInput("");
+      setTimeout(() => {
+      const reply: Message = { id: crypto.randomUUID?.() ?? String(Date.now() + 1), author: "hot", text: "Anotado! 🔥", timestamp: Date.now() };
+      setThreads(prev => prev.map(t => (t.id === id ? { ...t, messages: [...t.messages, reply] } : t)));
     }, 350);
   }
   function clearAll() {
     if (!confirm("Limpar todas as conversas?")) return;
     setThreads([]);
     localStorage.removeItem(STORAGE_KEY);
-    newThread();
+    setActiveId("");
   }
 
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-200 overflow-x-hidden">
       {/* SIDEBAR — sem caixas */}
       <aside className="hidden md:flex w-[280px] h-full flex-col overflow-x-hidden">
-        {/* topo (botão pílula) */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-3 space-y-1">
+      {/* menu colapsado */}
+        <div className="p-3">
           <button
-            onClick={newThread}
-            className="w-full text-sm px-4 py-2 rounded-full text-white hover:opacity-90"
-            style={{ backgroundColor: ORANGE }}
+            onClick={() => setMenuOpen(o => !o)}
+            className="w-full text-sm px-4 py-2 rounded-full bg-white/5 hover:bg-white/10"
           >
-            + Novo chat
+          Menu
           </button>
-        </div>
-
-        {/* busca (pílula) */}
-        <div className="px-3 pb-2">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar conversa"
-            className="w-full px-4 py-2 rounded-full bg-white/5 outline-none focus:bg-white/10 transition text-sm"
-          />
+        {menuOpen && (
+            <div className="mt-2 space-y-2">
+              <button
+                onClick={newThread}
+                className="w-full text-sm px-4 py-2 rounded-full text-white hover:opacity-90"
+                style={{ backgroundColor: ORANGE }}
+              >
+                + Novo chat
+              </button>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar conversa"
+                className="w-full px-4 py-2 rounded-full bg-white/5 outline-none focus:bg-white/10 transition text-sm"
+              />
+            </div>
+          )}
         </div>
 
         {/* lista sem cartões */}
@@ -172,31 +169,38 @@ export default function ChatHub() {
 
       {/* ÁREA DO CHAT */}
       <main className="flex-1 h-full flex flex-col">
-        {/* topbar sem barra/caixa */}
-        <div className="h-14 px-4 flex items-center justify-between sticky top-0 z-10 bg-zinc-950/80 backdrop-blur">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full grid place-items-center text-white" style={{ backgroundColor: ORANGE }}>
-              <span className="text-xs font-bold">HB</span>
-            </div>
-            <div>
-              <p className="font-semibold leading-4"> {active ? (getFirstUserText(active as any) || "Sem conteúdo") : "—"} </p>
-              {/* se quiser, dá pra por o primeiro conteúdo da conversa ativa aqui */}
+        {/* topbar */}
+        {active && active.messages.length > 0 && (
+          <div className="h-14 px-4 flex items-center justify-between sticky top-0 z-10 bg-zinc-950/80 backdrop-blur">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full grid place-items-center text-white" style={{ backgroundColor: ORANGE }}>
+                <span className="text-xs font-bold">HB</span>
+              </div>
+              <div>
+                <p className="font-semibold leading-4"> {getFirstUserText(active as any) || "Sem conteúdo"} </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* mensagens (só bolhas, sem cards) */}
-        <div 
-        ref={listRef}
-        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 space-y-2">
-          {messagesDesc.map((m) => (
-            <Bubble key={m.id} author={m.author} text={m.text} timestamp={m.timestamp} />
-          ))}
+        {/* mensagens */}
+        <div ref={listRef} className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+          {active && active.messages.length > 0 ? (
+            <div className="p-4 space-y-2">
+              {messagesDesc.map(m => (
+                <Bubble key={m.id} author={m.author} text={m.text} timestamp={m.timestamp} />
+              ))}
+            </div>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <h1 className="text-4xl font-bold">Prazer, Maia</h1>
+            </div>
+          )}
         </div>
 
         {/* input em pílula */}
         <div className="p-3 bg-zinc-950/80 backdrop-blur">
-          <div className="flex gap-2 min-w-0">
+        <div className="flex gap-2 min-w-0 max-w-2xl mx-auto">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
